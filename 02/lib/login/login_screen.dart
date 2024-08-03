@@ -78,7 +78,7 @@ class _LoginScreenState extends State<LoginScreen> {
     if(_firebaseAuth.currentUser != null) {
       try {
         await _firebaseAuth.currentUser!.updatePassword(_passwordUpdateNewPasswordController.text);
-      }catch (e) {
+      }on FirebaseAuthException catch (e) {
         final AuthCredential credential = EmailAuthProvider.credential(
           email: _passwordUpdateEmailController.text,
           password: _passwordUpdatePasswordController.text,
@@ -92,6 +92,24 @@ class _LoginScreenState extends State<LoginScreen> {
 
   Future<void> sendPasswordResetEmail() async {
     await _firebaseAuth.sendPasswordResetEmail(email: _passwordResetEmailController.text,);
+  }
+
+  Future<void> anonymousLogin() async {
+    final credential = await _firebaseAuth.signInAnonymously();
+    print('anonymous credential: $credential');
+  }
+
+  Future<void> anonymousUserJoin() async {
+    final emailCredential = EmailAuthProvider.credential(
+      email: _joinEmailController.text,
+      password: _joinPasswordController.text,
+    );
+    try{
+      final credential = await _firebaseAuth.currentUser?.linkWithCredential(emailCredential);
+      print('anonymous join credential: $credential');
+    } on FirebaseAuthException catch(e) {
+      print('anonymous user join failed: ${e.code}');
+    }
   }
 
   Future<void> googleLogin() async {
@@ -137,7 +155,19 @@ class _LoginScreenState extends State<LoginScreen> {
       print('login credential: $credential');
     }
   }
-  
+
+  Future<void> logout() async {
+    if(_firebaseAuth.currentUser != null) {
+      if(!_firebaseAuth.currentUser!.isAnonymous) {
+        final UserInfo userInfo = _firebaseAuth.currentUser!.providerData[0];
+        if(userInfo.providerId == 'google.com') {
+          await GoogleSignIn().signOut();
+        }
+      }
+      await _firebaseAuth.signOut();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -248,9 +278,21 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
                 ElevatedButton(
                   onPressed: () {
+                    anonymousLogin();
+                  },
+                  child: Text('익명 로그인',),
+                ),
+                ElevatedButton(
+                  onPressed: () {
+                    anonymousUserJoin();
+                  },
+                  child: Text('익명 사용자 회원가입',),
+                ),
+                ElevatedButton(
+                  onPressed: () {
                     googleLogin();
                   },
-                  child: Text('구글 로그인', ),
+                  child: Text('구글 로그인',),
                 ),
                 TextField(
                   controller: _phoneNumberController,
@@ -263,7 +305,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   onPressed: () {
                     phoneLogin();
                   },
-                  child: Text('전화번호 인증', ),
+                  child: Text('전화번호 인증',),
                 ),
                 TextField(
                   controller: _smsCodeController,
@@ -276,13 +318,13 @@ class _LoginScreenState extends State<LoginScreen> {
                   onPressed: () {
                     smsCodeVerify();
                   },
-                  child: Text('인증 코드 확인', ),
+                  child: Text('인증 코드 확인',),
                 ),
                 ElevatedButton(
                   onPressed: () {
-
+                    logout();
                   },
-                  child: Text('로그아웃', ),
+                  child: Text('로그아웃',),
                 ),
               ],
             ),
