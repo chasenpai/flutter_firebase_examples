@@ -19,7 +19,10 @@ class _LoginScreenState extends State<LoginScreen> {
   final _passwordUpdatePasswordController = TextEditingController();
   final _passwordUpdateNewPasswordController = TextEditingController();
   final _passwordResetEmailController = TextEditingController();
+  final _phoneNumberController = TextEditingController();
+  final _smsCodeController = TextEditingController();
   final FirebaseAuth _firebaseAuth = FirebaseAuth.instance;
+  String? _verificationId;
 
   @override
   void initState() {
@@ -44,6 +47,8 @@ class _LoginScreenState extends State<LoginScreen> {
     _passwordUpdatePasswordController.dispose();
     _passwordUpdateNewPasswordController.dispose();
     _passwordResetEmailController.dispose();
+    _phoneNumberController.dispose();
+    _smsCodeController.dispose();
     super.dispose();
   }
 
@@ -100,7 +105,39 @@ class _LoginScreenState extends State<LoginScreen> {
     final credential = await _firebaseAuth.signInWithCredential(googleCredential);
     print('login credential: $credential');
   }
+  
+  Future<void> phoneLogin() async {
+    await _firebaseAuth.verifyPhoneNumber(
+      phoneNumber: _phoneNumberController.text,
+      timeout: const Duration(seconds: 60),
+      verificationCompleted: (PhoneAuthCredential phoneCredential) async { //Android only
+        print('android phone credential: $phoneCredential');
+        await _firebaseAuth.signInWithCredential(phoneCredential);
+      },
+      verificationFailed: (FirebaseAuthException e) {
+        print('phone verification failed: ${e.code}');
+      },
+      codeSent: (String verificationId, int? resendToken) {
+        print('phone verificationId: $verificationId');
+        _verificationId = verificationId;
+      },
+      codeAutoRetrievalTimeout: (String verificationId) {
+        print('timeout :$verificationId');
+      },
+    );
+  }
 
+  Future<void> smsCodeVerify() async {
+    if(_verificationId != null) {
+      final PhoneAuthCredential phoneCredential = PhoneAuthProvider.credential(
+        verificationId: _verificationId!,
+        smsCode: _smsCodeController.text,
+      );
+      final credential = await _firebaseAuth.signInWithCredential(phoneCredential);
+      print('login credential: $credential');
+    }
+  }
+  
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -214,6 +251,38 @@ class _LoginScreenState extends State<LoginScreen> {
                     googleLogin();
                   },
                   child: Text('구글 로그인', ),
+                ),
+                TextField(
+                  controller: _phoneNumberController,
+                  decoration: InputDecoration(
+                    hintText: '전화번호',
+                    border: InputBorder.none,
+                  ),
+                ),
+                ElevatedButton(
+                  onPressed: () {
+                    phoneLogin();
+                  },
+                  child: Text('전화번호 인증', ),
+                ),
+                TextField(
+                  controller: _smsCodeController,
+                  decoration: InputDecoration(
+                    hintText: '인증 코드',
+                    border: InputBorder.none,
+                  ),
+                ),
+                ElevatedButton(
+                  onPressed: () {
+                    smsCodeVerify();
+                  },
+                  child: Text('인증 코드 확인', ),
+                ),
+                ElevatedButton(
+                  onPressed: () {
+
+                  },
+                  child: Text('로그아웃', ),
                 ),
               ],
             ),
