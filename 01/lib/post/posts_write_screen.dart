@@ -15,7 +15,9 @@ class PostWriteScreen extends StatefulWidget {
 }
 
 class _PostWriteScreenState extends State<PostWriteScreen> {
-  final DatabaseReference _databaseRef = FirebaseDatabase.instance.ref();
+  final DatabaseReference _postsRef = FirebaseDatabase.instance.ref('posts');
+  final DatabaseReference _postSummariesRef = FirebaseDatabase.instance.ref('postSummaries');
+  final DatabaseReference _userPostsRef = FirebaseDatabase.instance.ref('userPosts');
   final TextEditingController _nicknameController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   final TextEditingController _titleController = TextEditingController();
@@ -39,7 +41,23 @@ class _PostWriteScreenState extends State<PostWriteScreen> {
   }
 
   Future<void> _readPost() async {
-    final data = await _databaseRef.child('posts/${widget.postId}').once();
+    final postChildRef = _postsRef.child('${widget.postId}');
+    await postChildRef.update(
+      {
+        'hits': ServerValue.increment(1),
+      },
+    );
+    final postSummariesChildRef = _postSummariesRef.child('${widget.postId}');
+    await postSummariesChildRef.runTransaction((postSummary) {
+      if(postSummary == null) {
+        return Transaction.abort();
+      }
+      final Map<dynamic, dynamic> postSummariesData = postSummary as Map<dynamic, dynamic>;
+      postSummariesData['hits'] = postSummariesData['hits'] + 1;
+      return Transaction.success(postSummariesData);
+    });
+
+    final data = await _postsRef.child('${widget.postId}').once();
     if(data.snapshot.exists) {
       final post = data.snapshot.value as Map<dynamic, dynamic>;
       _nicknameController.text = post['nickname'];
@@ -50,7 +68,7 @@ class _PostWriteScreenState extends State<PostWriteScreen> {
   }
 
   Future<void> _savePost() async {
-    final DatabaseReference postRef = _databaseRef.child('posts').push();
+    final DatabaseReference postRef = _postsRef.push();
     final String postId = postRef.key!;
     Post post = Post(
       nickname: _nicknameController.text,
@@ -58,15 +76,17 @@ class _PostWriteScreenState extends State<PostWriteScreen> {
       title: _titleController.text,
       content: _contentController.text,
       createAt: DateTime.now(),
+      hits: 0,
     );
     PostSummery postSummery = PostSummery(
       nickname: post.nickname,
       title: post.title,
-      createAt: post.createAt,
+      createAt: post.createAt!,
+      hits: 0,
     );
     await postRef.set(post.toJson());
-    await _databaseRef.child('postSummaries/$postId').set(postSummery.toJson());
-    await _databaseRef.child('userPosts/${_nicknameController.text}/$postId').set(true);
+    await _postSummariesRef.child(postId).set(postSummery.toJson());
+    await _userPostsRef.child('${_nicknameController.text}/$postId').set(true);
     Navigator.of(context).pop();
   }
 
@@ -76,22 +96,20 @@ class _PostWriteScreenState extends State<PostWriteScreen> {
       password: _passwordController.text,
       title: _titleController.text,
       content: _contentController.text,
-      createAt: DateTime.now(),
     );
     PostSummery postSummery = PostSummery(
       nickname: post.nickname,
       title: post.title,
-      createAt: post.createAt,
     );
-    await _databaseRef.child('posts/${widget.postId}').update(post.toJson());
-    await _databaseRef.child('postSummaries/${widget.postId}').update(postSummery.toJson());
+    await _postsRef.child('${widget.postId}').update(post.toJson());
+    await _postSummariesRef.child('${widget.postId}').update(postSummery.toJson());
     Navigator.of(context).pop();
   }
 
   Future<void> _deletePost() async {
-    await _databaseRef.child('posts/${widget.postId}').remove();
-    await _databaseRef.child('postSummaries/${widget.postId}').remove();
-    await _databaseRef.child('userPosts/${_nicknameController.text}/${widget.postId}').remove();
+    await _postsRef.child('${widget.postId}').remove();
+    await _postSummariesRef.child('${widget.postId}').remove();
+    await _userPostsRef.child('${_nicknameController.text}/${widget.postId}').remove();
     Navigator.of(context).pop();
   }
 

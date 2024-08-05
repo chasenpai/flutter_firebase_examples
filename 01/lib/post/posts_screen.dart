@@ -28,8 +28,10 @@ class _PostsScreenState extends State<PostsScreen> {
           PostSummery post = PostSummery.fromJson(key, value);
           posts.add(post);
         });
-        posts.sort((a, b) => b.createAt.compareTo(a.createAt));
+        posts.sort((a, b) => b.createAt!.compareTo(a.createAt!));
       }
+      setState(() {
+      });
     });
   }
 
@@ -133,7 +135,7 @@ class _PostsScreenState extends State<PostsScreen> {
                           post.title,
                         ),
                         subtitle: Text(
-                            '${post.nickname} · ${post.createAt}'
+                          '${post.nickname} · ${post.createAt} · ${post.hits}',
                         ),
                       ),
                     );
