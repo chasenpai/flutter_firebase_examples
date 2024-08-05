@@ -114,7 +114,7 @@ class _PostsScreenState extends State<PostsScreen> {
                             post.title,
                           ),
                           subtitle: Text(
-                              '${post.nickname} · ${post.createAt}'
+                              '${post.nickname} · ${post.createAt} · ${post.hits}'
                           ),
                         ),
                         );

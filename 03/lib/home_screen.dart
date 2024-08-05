@@ -22,6 +22,8 @@ class _HomeScreenState extends State<HomeScreen> {
         'country': 'korea',
         'city': 'seoul',
       },
+      'hobbies' : ['game', 'coding', 'workout'],
+      'followers': 10,
     };
     await _firestore.collection('users')
       .doc('honggildong')
@@ -32,8 +34,11 @@ class _HomeScreenState extends State<HomeScreen> {
     final honggildongRef = _firestore.collection('users').doc('honggildong');
     await honggildongRef.update(
       {
-        'age': 26,
+        'age': 27,
         'address.city': 'busan',
+        'hobbies': FieldValue.arrayUnion(['art']),
+        //'hobbies': FieldValue.arrayRemove(['art']),
+        'followers': FieldValue.increment(1),
       },
     );
   }

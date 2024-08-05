@@ -40,6 +40,11 @@ class _PostWriteScreenState extends State<PostWriteScreen> {
 
   Future<void> _readPost() async {
     final postRef = _postsCollection.doc(widget.postId!);
+    await postRef.update(
+      {
+        'hits': FieldValue.increment(1),
+      },
+    );
     await postRef.get()
       .then(
           (DocumentSnapshot doc) {
@@ -62,7 +67,9 @@ class _PostWriteScreenState extends State<PostWriteScreen> {
       title: _titleController.text,
       content: _contentController.text,
       createAt: DateTime.now(),
+      hits: 0,
     );
+    print('post: ${post.hits}');
     await _postsCollection.add(post.toJson()).then(
       (value) {
         print('save success: ${value.id}');
@@ -80,10 +87,9 @@ class _PostWriteScreenState extends State<PostWriteScreen> {
       password: _passwordController.text,
       title: _titleController.text,
       content: _contentController.text,
-      createAt: DateTime.now(),
     );
     final postRef = _postsCollection.doc(widget.postId!);
-    await postRef.update(post.toJson()).then(
+    await postRef.set(post.toJson(), SetOptions(merge: true),).then(
       (value) {
         print('update success');
       },

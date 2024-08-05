@@ -4,7 +4,8 @@ class Post {
   final String password;
   final String title;
   final String content;
-  final DateTime createAt;
+  final DateTime? createAt;
+  final int? hits;
 
   const Post({
     this.id,
@@ -12,7 +13,8 @@ class Post {
     required this.password,
     required this.title,
     required this.content,
-    required this.createAt,
+    this.createAt,
+    this.hits,
   });
 
   factory Post.fromJson(String id, Map<dynamic, dynamic> json) {
@@ -23,6 +25,7 @@ class Post {
       title: json['title'],
       content: json['content'],
       createAt: DateTime.fromMillisecondsSinceEpoch(json['createAt']),
+      hits: json['hits'],
     );
   }
 
@@ -32,7 +35,8 @@ class Post {
       'password': password,
       'title': title,
       'content': content,
-      'createAt': createAt.millisecondsSinceEpoch,
+      if(createAt != null) 'createAt': createAt!.millisecondsSinceEpoch,
+      if(hits != null) 'hits': hits,
     };
   }
 }
