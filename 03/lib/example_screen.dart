@@ -115,6 +115,114 @@ class _ExampleScreenState extends State<ExampleScreen> {
       }
     );
   }
+  
+  Future<void> createDummyData() async {
+    for(int i = 1; i <= 10; i++) {
+      final user = {
+        'name': 'name$i',
+        'age': 20 + i,
+      };
+      await _firestore.collection('users')
+          .doc('user$i')
+          .set(user);
+    }
+  }
+
+  Future<void> queryCondition() async {
+    final usersRef = _firestore.collection('users');
+    usersRef.where('name', isEqualTo: 'name1').get().then(
+      (querySnapshot) {
+        for(var docSnapshot in querySnapshot.docs) {
+          print(docSnapshot.data());
+        }
+      },
+      onError: (e) {
+        print('query failed $e');
+      },
+    );
+    usersRef.where('age', isGreaterThan: 25).get().then(
+      (querySnapshot) {
+        for(var docSnapshot in querySnapshot.docs) {
+          print(docSnapshot.data());
+        }
+      },
+      onError: (e) {
+        print('query failed $e');
+      },
+    );
+    usersRef.where('hobbies', arrayContainsAny: ['game']).get().then(
+      (querySnapshot) {
+        for(var docSnapshot in querySnapshot.docs) {
+          print(docSnapshot.data());
+        }
+      },
+      onError: (e) {
+        print('query failed $e');
+      },
+    );
+    usersRef
+      .where(
+        Filter.or(
+          Filter('age', isEqualTo: 21),
+          Filter('age', isEqualTo: 25),
+        ),
+      ).get().then(
+          (querySnapshot) {
+        for(var docSnapshot in querySnapshot.docs) {
+          print(docSnapshot.data());
+        }
+      },
+      onError: (e) {
+        print('query failed $e');
+      },
+    );
+  }
+
+  Future<void> queryOrderAndLimit() async {
+    final usersRef = _firestore.collection('users');
+    usersRef
+      .where('age', isGreaterThan: 20)
+      .orderBy('age', descending: true)
+      .limit(3)
+      .get().then(
+          (querySnapshot) {
+        for(var docSnapshot in querySnapshot.docs) {
+          print(docSnapshot.data());
+        }
+      },
+      onError: (e) {
+        print('query failed $e');
+      },
+    );
+  }
+
+  Future<void> querySummarize() async {
+    final usersRef = _firestore.collection('users');
+    usersRef.where('age', isGreaterThan: 25).count().get().then(
+      (result) {
+        print(result.count);
+      },
+      onError: (e) {
+        print('query failed $e');
+      },
+    );
+  }
+
+  Future<void> queryPagination() async {
+    final usersRef = _firestore.collection('users');
+    final firstPage = await usersRef.limit(10).get();
+    final lastVisible = firstPage.docs.last;
+    usersRef.startAfterDocument(lastVisible).limit(10).get().then(
+      (querySnapshot) {
+        for(var docSnapshot in querySnapshot.docs) {
+          print(docSnapshot.data());
+        }
+      },
+      onError: (e) {
+        print('query failed $e');
+      },
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -180,6 +288,46 @@ class _ExampleScreenState extends State<ExampleScreen> {
                   },
                   child: Text(
                     'batch',
+                  ),
+                ),
+                ElevatedButton(
+                  onPressed: () {
+                    createDummyData();
+                  },
+                  child: Text(
+                    'create dummy data',
+                  ),
+                ),
+                ElevatedButton(
+                  onPressed: () {
+                    queryCondition();
+                  },
+                  child: Text(
+                    'query condition',
+                  ),
+                ),
+                ElevatedButton(
+                  onPressed: () {
+                    queryOrderAndLimit();
+                  },
+                  child: Text(
+                    'query order & limit',
+                  ),
+                ),
+                ElevatedButton(
+                  onPressed: () {
+                    querySummarize();
+                  },
+                  child: Text(
+                    'query summarize',
+                  ),
+                ),
+                ElevatedButton(
+                  onPressed: () {
+                    queryPagination();
+                  },
+                  child: Text(
+                    'query pagination',
                   ),
                 ),
               ],
