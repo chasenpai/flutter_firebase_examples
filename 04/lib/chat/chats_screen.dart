@@ -1,9 +1,7 @@
 import 'package:async/async.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
 import 'package:test05/chat/chat_room_screen.dart';
-import 'package:test05/chat/chat_user.dart';
 
 class ChatsScreen extends StatefulWidget {
   final String userId;
@@ -22,6 +20,7 @@ class _ChatsScreenState extends State<ChatsScreen> {
   final _chatRoomsRef = FirebaseDatabase.instance.ref('chatRooms');
 
   Stream<List<DataSnapshot>> chatRoomsStream() async* {
+    Map<String, DataSnapshot> chatRoomSnapshots = {};
     final Stream<DatabaseEvent> userChatRoomIdsStream =
         _usersRef.child('${widget.userId}/chatRoomIds').onValue;
     await for(var event in userChatRoomIdsStream) {
@@ -30,7 +29,10 @@ class _ChatsScreenState extends State<ChatsScreen> {
       List<Stream<DataSnapshot>> chatRoomStreams = userChatRoomIds.map((id) {
         return _chatRoomsRef.child(id).onValue.map((event) => event.snapshot);
       }).toList();
-      yield* StreamZip(chatRoomStreams);
+      yield* StreamGroup.merge(chatRoomStreams).map((snapshot) {
+        chatRoomSnapshots[snapshot.key!] = snapshot;
+        return chatRoomSnapshots.values.toList();
+      });
     }
   }
 
@@ -48,6 +50,10 @@ class _ChatsScreenState extends State<ChatsScreen> {
           stream: chatRoomsStream(),
           builder: (context, snapshot) {
             if(snapshot.connectionState == ConnectionState.waiting) {
+              return const Center(child: CircularProgressIndicator(),);
+            }
+            if(!snapshot.hasData) {
+              print(snapshot);
               return const Center(child: CircularProgressIndicator(),);
             }
             final List<DataSnapshot> chatRooms = snapshot.data!;
@@ -110,6 +116,7 @@ class _ChatsScreenState extends State<ChatsScreen> {
                 );
               },
             );
+            //return Container();
           },
         ),
       ),
