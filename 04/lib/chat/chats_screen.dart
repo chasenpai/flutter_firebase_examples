@@ -59,6 +59,7 @@ class _ChatsScreenState extends State<ChatsScreen> {
             return ListView.separated(
               itemCount: chatRooms.length,
               itemBuilder: (context, index) {
+                final chatRoomId = chatRooms[index].key as String;
                 final Map<dynamic, dynamic> chatRoom = chatRooms[index].value as Map<dynamic, dynamic>;
                 final name = chatRoom['names'][widget.userId];
                 final text = chatRoom['lastMessage']['text'];
@@ -66,7 +67,12 @@ class _ChatsScreenState extends State<ChatsScreen> {
                 return GestureDetector(
                   onTap: () {
                     Navigator.of(context).push(
-                      MaterialPageRoute(builder: (_) => const ChatRoomScreen(),),
+                      MaterialPageRoute(builder: (_) => ChatRoomScreen(
+                          userId: widget.userId,
+                          chatRoomId: chatRoomId,
+                          chatName: name,
+                        ),
+                      ),
                     );
                   },
                   child: ListTile(
